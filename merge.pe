@@ -1,0 +1,47 @@
+# merge.pe — merge the dot-matrix base with FiraCode Nerd Font.
+#
+# The base wins on every code point both fonts share (letters, digits, box
+# drawing, ...); FiraCode only contributes glyphs the base is missing (the
+# Nerd Font icon planes, CJK, emoji, ...). FiraCode is scaled onto the base's
+# units-per-em first, because MergeFonts() does not rescale on its own.
+#
+# Usage:
+#   fontforge -script merge.pe BASE MERGE OUT FAMILY PSNAME
+
+if ( $argc < 5 )
+  Error("Usage: merge.pe BASE MERGE OUT FAMILY PSNAME")
+endif
+
+base   = $1
+extra  = $2
+out    = $3
+family = $4
+psname = $5
+
+Print("merge: base=", base, " merge=", extra, " out=", out)
+
+# 1. Learn the base em size.
+Open(base)
+target = $em
+Print("  base em: ", target)
+Close()
+
+# 2. Open FiraCode and scale it onto the base grid.
+Open(extra)
+if ( $em != target )
+  Print("  scaling merge font ", $em, " -> ", target, " upm")
+  ScaleToEm(target)
+endif
+
+# 3. Merge; base glyphs and lookups win on overlap.
+Open(base)
+MergeFonts(extra)
+
+# 4. Re-brand the merged face.
+SetFontNames(psname, family, family + " Regular", "Regular")
+
+# 5. Emit TrueType outlines.
+Generate(out, "", 0)
+Close()
+
+Print("merge: wrote ", out)
