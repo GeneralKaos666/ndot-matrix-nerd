@@ -152,6 +152,13 @@ def main():
         # the like are supplied by the merge font)
         if dw != 6:
             continue
+        # Skip Private Use Area codepoints. Cozette ships its own low-res dot
+        # glyphs for these (503 of them, including U+F07B "folder"), and they
+        # would override FiraCode's proper Nerd Font icons on merge. Let the
+        # merge font own the icon planes instead.
+        if (0xE000 <= cp <= 0xF8FF) or (0xF0000 <= cp <= 0xFFFFD) or \
+           (0x100000 <= cp <= 0x10FFFD):
+            continue
         glyph_name = name
         if glyph_name in order:
             glyph_name = "uni%04X" % cp if cp < 0x10000 else "u%05X" % cp
@@ -166,7 +173,18 @@ def main():
     fb.setupGlyphOrder(order)
     fb.setupCharacterMap(cmap)
     fb.setupGlyf(glyf)
-    fb.setupHorizontalMetrics({n: (ADVANCE, 0) for n in order})
+
+    # Correct left side bearing per glyph. Glyphs with a left offset (xoff>0)
+    # have their ink shifted right of the origin; a wrong lsb=0 makes the merge
+    # re-anchor them and corrupt box drawing. lsb must equal the ink's xMin.
+    metrics = {}
+    for name in order:
+        g = glyf[name]
+        g.recalcBounds(None)
+        lsb = g.xMin if g.numberOfContours > 0 else 0
+        metrics[name] = (ADVANCE, lsb)
+    fb.setupHorizontalMetrics(metrics)
+
     fb.setupHorizontalHeader(ascent=ASCENT, descent=DESCENT)
     fb.setupNameTable({
         "familyName": FAMILY,

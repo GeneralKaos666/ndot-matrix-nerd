@@ -2,3 +2,7 @@
 base-dots.ttf
 merged.ttf
 ndot-matrix-nerd.ttf
+
+# python bytecode
+__pycache__/
+*.pyc
