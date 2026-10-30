@@ -140,12 +140,16 @@ def rasterize(contours, i0, i1, j0, j1):
 
 def draw_dot(pen, cx, cy):
     c = RADIUS / math.cos(math.radians(22.5))
-    pts = [(round(cx + RADIUS * math.cos(math.radians(k * 45))),
-            round(cy + RADIUS * math.sin(math.radians(k * 45)))) for k in range(8)]
+    # Slightly irregular dots for less mechanical look
+    rx = RADIUS * 0.98
+    ry = RADIUS * 0.94
+    pts = [(round(cx + rx * math.cos(math.radians(k * 45))),
+            round(cy + ry * math.sin(math.radians(k * 45)))) for k in range(8)]
     pen.moveTo(pts[0])
     for k in range(8):
         a_mid = math.radians(k * 45 + 22.5)
-        ctrl = (round(cx + c * math.cos(a_mid)), round(cy + c * math.sin(a_mid)))
+        ctrl = (round(cx + c * math.cos(a_mid)), round(cy + ry/rx * c * math.sin(a_mid) * 0.96))  # rough
+        ctrl = (round(cx + (c * rx/RADIUS) * math.cos(a_mid)), round(cy + (c * ry/RADIUS) * math.sin(a_mid)))
         pen.qCurveTo(ctrl, pts[(k + 1) % 8])
     pen.closePath()
 
@@ -212,15 +216,26 @@ def restyle(path):
             tadv = SINGLE
             sx, sy = SINGLE / w, (ASCENT - DESCENT) / h
         else:
-            tadv = DOUBLE if mode == "icon" else SINGLE
-            box_w = tadv - 2 * PAD
-            box_h = (ASCENT - DESCENT) - 2 * PAD
-            s = min(box_w / w, box_h / h)
-            sx = sy = s
+            if mode == "icon":
+                tadv = DOUBLE
+                pad_x = 45
+                pad_y = 65
+                box_w = tadv - 2 * pad_x
+                box_h = (ASCENT - DESCENT) - 2 * pad_y
+                s = min(box_w / w, box_h / h)
+                sx = s * 1.04
+                sy = s * 1.0
+            else:
+                tadv = SINGLE
+                box_w = tadv - 2 * PAD
+                box_h = (ASCENT - DESCENT) - 2 * PAD
+                s = min(box_w / w, box_h / h)
+                sx = sy = s
 
         cx, cy = (x0 + x1) / 2.0, (y0 + y1) / 2.0
         tcx = tadv / 2.0
-        tcy = (ASCENT + DESCENT) / 2.0
+        # Try to align closer to baseline like text does
+        tcy = (ASCENT + DESCENT) / 2.0 + 15  # shift down slightly
 
         def tx(p):
             return (p - cx) * sx + tcx

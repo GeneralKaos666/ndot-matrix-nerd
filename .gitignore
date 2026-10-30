@@ -6,3 +6,4 @@ ndot-matrix-nerd.ttf
 # python bytecode
 __pycache__/
 *.pyc
+AGENTS.md
